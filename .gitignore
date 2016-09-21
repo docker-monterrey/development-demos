@@ -22,3 +22,5 @@ tmp/*
 
 db/dumps/*
 !db/dumps/.keep
+
+.composer
