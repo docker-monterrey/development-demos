@@ -1,0 +1,9 @@
+bin/*
+!bin/checkdb
+!bin/restoredb
+!bin/dumpdb
+
+obj/
+
+db/dumps/*
+!db/dumps/README.md

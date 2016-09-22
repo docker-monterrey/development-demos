@@ -1,0 +1,50 @@
+version: "2"
+
+volumes:
+  postgres-data:
+    driver: local
+  comments-packages:
+    driver: local
+
+services:
+  postgres:
+    image: postgres:9.5.3
+    ports:
+      # We'll bind our host's port 5432 to postgres's port 5432, so we can use
+      # our database IDEs with it:
+      - 5432:5432
+    volumes:
+      - ./db/dumps:/db/dumps              # Mount the DB dumps folder
+      - ./bin/restoredb:/bin/restoredb:ro # Mount the 'restoredb' script
+      - ./bin/dumpdb:/bin/dumpdb:ro       # Mount the 'dumpdb' script
+      - postgres-data:/var/lib/postgresql/data   # Mount the postgres data volume
+    environment:
+      POSTGRES_PASSWORD: 3x4mpl3
+  web:
+    image: docker-monterrey/development-demos-comments:development
+    build:
+      context: .
+      dockerfile: dev.Dockerfile
+    entrypoint: /usr/src/app/development-entrypoint
+    volumes:
+      # Mount our app code directory (".") into our app containers at the
+      # "/usr/src/app" folder:
+      - .:/usr/src/app
+
+      # Mount the 'comments-packages' volume on the folder that stores restored
+      # app dependencies:
+      - comments-packages:/root/.nuget/packages
+
+    # Keep the stdin open, so we can attach to our app container's process
+    # and do things such as byebug, etc:
+    stdin_open: true
+
+    # Enable sending signals (CTRL+C, CTRL+P + CTRL+Q) into the container:
+    tty: true
+
+    command: dotnet run
+    ports: [ "4003:5000" ]
+    links: [ "postgres:db" ]
+    environment:
+      DATABASE_URL: postgres://postgres:3x4mpl3@db:5432/comments_development
+      ASPNETCORE_URLS: http://0.0.0.0:5000
