@@ -35,6 +35,8 @@ then
   # to check for dependencies during each app start:
   composer install
 
+  # php artisan migrate
+
   # 5: Check if the database exists, or setup the database if it doesn't, as it is
   # the case when the project runs for the first time.
   #
