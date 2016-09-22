@@ -1,0 +1,40 @@
+# Éste archivo contiene la configuración base de la aplicación 'Surverys - Ruby On Rails', y su
+# razón de ser es definir la misma configuración para correr la app de manera aislada (sólo correr
+# la app de 'Surveys'), o en conjunto con el resto de los microservicios (al correr
+# 'development-demos'):
+version: "2"
+
+# La sección de 'services' nos permite definir el conjunto de servicios (contenedores) que
+# componen nuestra aplicación. Sin embargo, en el caso de éste archivo en particular solamente se
+# definirá la configuración base de la app que estamos desarrollando:
+services:
+  # La configuración base:
+  app:
+    # La sección 'build' en conjunto con la sección 'image' nos permite crear una imagen a partir
+    # de los comandos del archivo Dockerfile señalado, con el nombre de imagen que definamos:
+    build:
+      context: .
+      dockerfile: dev.Dockerfile
+    image: docker-monterrey/development-demos-surveys:development
+
+    # La sección 'entrypoint' nos permite definir un script de arranque de nuestros containers:
+    entrypoint: /usr/src/app/development-entrypoint
+
+    # La sección de 'volumes' nos permite montar directorios y archivos de nuestro Host dentro de
+    # nuestros containers - especialmente código -, así como también volúmenes definidos en la
+    # sección de 'volumes', e incluso volúmenes definidos por algún otro contenedor:
+    volumes:
+      # Montamos el directorio actual - que contiene el código de la app - dentro de nuestro
+      # contenedor de aplicación:
+      - .:/usr/src/app
+
+      # Montamos el volúmen que hayamos definido en los archivos padre dentro del contenedor de la
+      # aplicación, en el directorio donde ruby buscará las gemas instaladas:
+      - surveys-gems:/usr/local/bundle
+
+    # Mantiene STDIN abierto, para que nosotros podamos conectar nuestras terminales a el proceso de
+    # nuestro contenedor, y así poder debuggear la app usando byebug, etc:
+    stdin_open: true
+
+    # Habilita el que podamos enviar señales de proceso (CTRL+C, CTRL+P + CTRL+Q) hacia el contenedor:
+    tty: true

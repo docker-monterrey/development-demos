@@ -1,8 +1,8 @@
 version: "2"
 
 # La sección de 'volumes' nos permite definir 'volúmenes' en los cuales podremos persistir archivos
-# - por ejemplo, los datos de Postgres/Redis - de manera que estén disponibles aún y cuando los
-# contenedores del proyecto sean destruidos:
+# - por ejemplo, los datos de Postgres/Redis, Gems de Ruby, Packages de .NET - de manera que estén
+# disponibles aún y cuando los contenedores del proyecto sean destruidos:
 volumes:
   # El volúmen en el que se almacenarán los datos de Postgres:
   postgres-data:
@@ -12,6 +12,9 @@ volumes:
     driver: local
   # El volúmen en el que se almacenarán gemas de Ruby instaladas después del build:
   surveys-gems:
+    driver: local
+  # El volúmen en el que se almacenarán paquetes de .NET instaladas después del build:
+  comments-packages:
     driver: local
 
 # La sección de 'services' nos permite definir el conjunto de servicios (contenedores) que
@@ -73,11 +76,11 @@ services:
     # ocasión, estaremos agregando la opción `--apendonly yes` para que persista los datos:
     command: redis-server --appendonly yes
 
-  # El servicio web de éste proyecto de Ruby on Rails:
-  web: &base
+  # El servicio con las encuestas/votaciones disponibles, hecho con Ruby on Rails:
+  surveys-web: &surveys-base
     # La sección 'extends' nos permite importar la definición de un servicio definido en otro archivo:
     extends:
-      file: docker-compose-app-base.yml
+      file: surveys/docker-compose-app-base.yml
       service: app
 
     command: rails server -b 0.0.0.0 -p 3000
@@ -90,11 +93,11 @@ services:
       - postgres:db  # Permite ver el servicio de Postgres desde éste contenedor con el hostname 'db'
       - redis:keyval # Permite ver el servicio de Redis desde éste contenedor con el hostname 'keyval'
 
-    # La sección 'env_file' nos permite cargar variables de ambiente almacenadas en un archivo dotenv.
-    # Lo usamos especialmente para cargar credenciales (passwords) y otras cosas que no queremos tener
-    # en control de versionamiento:
-    env_file:
-      - development.env
+    # # La sección 'env_file' nos permite cargar variables de ambiente almacenadas en un archivo dotenv.
+    # # Lo usamos especialmente para cargar credenciales (passwords) y otras cosas que no queremos tener
+    # # en control de versionamiento:
+    # env_file:
+    #   - development.env
 
     environment:
       DATABASE_URL: postgres://postgres:3x4mpl3@db:5432/vulcan_development
@@ -104,3 +107,50 @@ services:
       RAILS_ENV: development
       RACK_ENV: development
       RAILS_LOG_TO_STDOUT: "true"
+
+  # EL servicio que almacena las votaciones y resultados, hecho con PHP Laravel:
+  votes-web: &votes-base
+    # La sección 'extends' nos permite importar la definición de un servicio definido en otro archivo:
+    extends:
+      file: votes/docker-compose-app-base.yml
+      service: app
+
+    command: php artisan serve --host=0.0.0.0 --port=8000
+
+    ports:
+      - 4002:8000
+
+    # La sección 'links' nos permite enlazar éste contenedor con otros contenedores del proyecto:
+    links:
+      - postgres:db  # Permite ver el servicio de Postgres desde éste contenedor con el hostname 'db'
+
+    # # La sección 'env_file' nos permite cargar variables de ambiente almacenadas en un archivo dotenv.
+    # # Lo usamos especialmente para cargar credenciales (passwords) y otras cosas que no queremos tener
+    # # en control de versionamiento:
+    # env_file:
+    #   - development.env
+
+    environment:
+      APP_ENV: local
+      APP_KEY: base64:SnKMY/qWZKmt2I8SCWrEWsiDFKSPVtJQzo0buRquUHQ=
+      DATABASE_URL: postgres://postgres:3x4mpl3@db:5432/votes_development
+
+  # El servicio de comentarios, hecho con ASP.NET:
+  comments-web: &comments-base
+    # La sección 'extends' nos permite importar la definición de un servicio definido en otro archivo:
+    extends:
+      file: comments/docker-compose-app-base.yml
+      service: app
+
+    command: dotnet run
+
+    ports:
+      - 4003:5000
+
+    links:
+      # Permite ver el servicio de Postgres desde éste contenedor con el hostname 'db':
+      - postgres:db
+
+    environment:
+      DATABASE_URL: postgres://postgres:3x4mpl3@db:5432/comments_development
+      ASPNETCORE_URLS: http://0.0.0.0:5000

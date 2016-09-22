@@ -1,46 +1,80 @@
 version: "2"
 
+# La sección de 'volumes' nos permite definir 'volúmenes' en los cuales podremos persistir archivos
+# - por ejemplo, los datos de Postgres/Redis - de manera que estén disponibles aún y cuando los
+# contenedores del proyecto sean destruidos:
 volumes:
+  # El volúmen en el que se almacenarán los datos de Postgres:
   postgres-data:
     driver: local
+  # El volúmen en el que se almacenarán los datos de Redis:
+  redis-data:
+    driver: local
 
+# La sección de 'services' nos permite definir el conjunto de servicios (contenedores) que
+# componen nuestra aplicación:
 services:
+  # El Servicio de base de datos de Postgres:
   postgres:
-    image: postgres:9.5.3
+    # La sección de 'image' nos permite definir qué imagen (software) queremos usar en nuestro
+    # contenedor. En éste servicio usaremos la imagen oficial de Postgres:
+    image: postgres:9.5.4
+
+    # La sección de 'ports' nos permite enlazar puertos del Host hacia puertos de nuestros contenedores,
+    # permitiendo acceder a los mismos desde 'localhost':
     ports:
-      # We'll bind our host's port 5432 to postgres's port 5432, so we can use
-      # our database IDEs with it:
+      # Enlazaremos el puerto 5432 de nuestro Host al mismo puerto de nuestro contenedor de Postgres,
+      # permitiendonos acceder a él con nuestros IDE's favoritos en 'localhost':
       - 5432:5432
+
+    # La sección de 'volumes' nos permite montar directorios y archivos de nuestro Host dentro de
+    # nuestros containers - especialmente código -, así como también volúmenes definidos en la
+    # sección de 'volumes', e incluso volúmenes definidos por algún otro contenedor:
     volumes:
-      - ./database/dumps:/db/dumps        # Mount the DB dumps folder
-      - ./bin/restoredb:/bin/restoredb:ro # Mount the 'restoredb' script
-      - ./bin/dumpdb:/bin/dumpdb:ro       # Mount the 'dumpdb' script
-      - ./database/development.sql:/docker-entrypoint-initdb.d/01.sql:ro
-      - postgres-data:/var/lib/postgresql/data   # Mount the postgres data volume
+      # Montamos el directorio 'db/dumps' dentro de nuestro contenedor de Postgres, para almacenar
+      # ahí los respaldos que saquemos de las bases de datos, y poderlas restaurar posteriormente:
+      - ./db/dumps:/db/dumps
+
+      # Montaremos los scripts de respaldo y restauración de base de datos de alguno de los
+      # sub-proyectos (todos tienen el mismo contenido):
+      - ./surveys/bin/dumpdb:/bin/dumpdb:ro
+      - ./surveys/bin/restoredb:/bin/restoredb:ro
+
+      # Montaremos los scripts de inicialización de SQL para aquellos proyectos que no tienen la
+      # capacidad de crear la base de datos por sí mismos:
+      - ./votes/database/development.sql:/docker-entrypoint-initdb.d/votes_development.sql:ro
+
+      # Montamos el volúmen definido en la sección de 'volumes' en el directorio donde nuestro
+      # contenedor de Postgres almacena los datos:
+      - postgres-data:/var/lib/postgresql/data
+
+    # La sección de 'environment' nos permite definir variables de entorno para éste contenedor:
     environment:
+      # Ésta variable es usada por el entrypoint de Postgres para configurar el password del usuario
+      # 'postgres':
       POSTGRES_PASSWORD: 3x4mpl3
-  web:
-    image: docker-monterrey/votes:development
-    build:
-      context: .
-      dockerfile: dev.Dockerfile
-    entrypoint: /usr/src/app/development-entrypoint
-    volumes:
-      # Mount our app code directory (".") into our app containers at the
-      # "/usr/src/app" folder:
-      - .:/usr/src/app
 
-    # Keep the stdin open, so we can attach to our app container's process
-    # and do things such as byebug, etc:
-    stdin_open: true
-
-    # Enable sending signals (CTRL+C, CTRL+P + CTRL+Q) into the container:
-    tty: true
+  web: &base
+    # La sección 'extends' nos permite importar la definición de un servicio definido en otro archivo:
+    extends:
+      file: docker-compose-app-base.yml
+      service: app
 
     command: php artisan serve --host=0.0.0.0 --port=8000
-    ports: [ "4002:8000" ]
-    links: [ "postgres:db" ]
-    env_file: [ "development.env" ]
+
+    ports:
+      - 4002:8000
+
+    # La sección 'links' nos permite enlazar éste contenedor con otros contenedores del proyecto:
+    links:
+      - postgres:db  # Permite ver el servicio de Postgres desde éste contenedor con el hostname 'db'
+
+    # La sección 'env_file' nos permite cargar variables de ambiente almacenadas en un archivo dotenv.
+    # Lo usamos especialmente para cargar credenciales (passwords) y otras cosas que no queremos tener
+    # en control de versionamiento:
+    env_file:
+      - development.env
+
     environment:
       APP_ENV: local
       APP_KEY: base64:SnKMY/qWZKmt2I8SCWrEWsiDFKSPVtJQzo0buRquUHQ=
