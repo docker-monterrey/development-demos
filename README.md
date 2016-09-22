@@ -5,5 +5,5 @@
 ```bash
 git clone https://github.com/docker-monterrey/development-demos.git \
   && cd development-demos \
-  && docker-compose start -d
+  && docker-compose up -d
 ```
