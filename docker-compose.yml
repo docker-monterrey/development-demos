@@ -93,12 +93,8 @@ services:
       - postgres:db  # Permite ver el servicio de Postgres desde éste contenedor con el hostname 'db'
       - redis:keyval # Permite ver el servicio de Redis desde éste contenedor con el hostname 'keyval'
 
-    # # La sección 'env_file' nos permite cargar variables de ambiente almacenadas en un archivo dotenv.
-    # # Lo usamos especialmente para cargar credenciales (passwords) y otras cosas que no queremos tener
-    # # en control de versionamiento:
-    # env_file:
-    #   - development.env
-
+    # La sustitución de variables que ven en la siguiente sección puede cargar datos de manera
+    # automática del archivo `/.env`:
     environment:
       DATABASE_URL: postgres://postgres:3x4mpl3@db:5432/vulcan_development
       AMQP_URL: amqp://guest:guest@amqp:5672
@@ -107,6 +103,7 @@ services:
       RAILS_ENV: development
       RACK_ENV: development
       RAILS_LOG_TO_STDOUT: "true"
+      WEB_CONSOLE_WHITELISTED_IPS: ${WEB_CONSOLE_WHITELISTED_IPS}
 
   # EL servicio que almacena las votaciones y resultados, hecho con PHP Laravel:
   votes-web: &votes-base
@@ -124,12 +121,8 @@ services:
     links:
       - postgres:db  # Permite ver el servicio de Postgres desde éste contenedor con el hostname 'db'
 
-    # # La sección 'env_file' nos permite cargar variables de ambiente almacenadas en un archivo dotenv.
-    # # Lo usamos especialmente para cargar credenciales (passwords) y otras cosas que no queremos tener
-    # # en control de versionamiento:
-    # env_file:
-    #   - development.env
-
+    # La sustitución de variables que ven en la siguiente sección puede cargar datos de manera
+    # automática del archivo `/.env`:
     environment:
       APP_ENV: local
       APP_KEY: base64:SnKMY/qWZKmt2I8SCWrEWsiDFKSPVtJQzo0buRquUHQ=
