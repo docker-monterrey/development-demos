@@ -60,7 +60,7 @@ services:
   # El servicio de Redis:
   redis:
     # Usaremos la imagen oficial de Redis, version 'Alpine' (más pequeña):
-    image: redis:3.2.3-alpine
+    image: redis:3.2.5-alpine
     ports:
       # Enlazaremos el puerto 6379 de nuestro Host al mismo puerto de nuestro contenedor de Redis,
       # permitiendonos acceder a él como 'localhost':
