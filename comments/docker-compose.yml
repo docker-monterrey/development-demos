@@ -7,11 +7,8 @@ volumes:
   # El volúmen en el que se almacenarán los datos de Postgres:
   postgres-data:
     driver: local
-  # El volúmen en el que se almacenarán los datos de Redis:
-  redis-data:
-    driver: local
-  # El volúmen en el que se almacenarán gemas de Ruby instaladas después del build:
-  surveys-gems:
+  # El volúmen en el que se almacenarán paquetes de .NET instaladas después del build:
+  comments-packages:
     driver: local
 
 # La sección de 'services' nos permite definir el conjunto de servicios (contenedores) que

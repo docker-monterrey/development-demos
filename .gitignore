@@ -18,7 +18,7 @@ tmp/*
 .bash_history
 
 *.env
-!*.example.env
+!*example.env
 
 db/dumps/*
 !db/dumps/.keep
